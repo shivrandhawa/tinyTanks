@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html>
 
@@ -22,30 +21,45 @@
     </div>
 
 </body>
+
 </html>
 
 <!-- socket CDN -->
 <script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
 <script>
-    //create cavas
+    //link canvas dom element
     var ctx = document.getElementById('ctx').getContext('2d');
-    ctx.font = '30px';
+    ctx.font = '30px Arial';
 
-
-
-    //initalizing connection
+    //initializing connection
     var socket = io();
 
-
-
-    //example receiving msg from server:
-    socket.on('msgfromserver', data =>{
-        console.log(data.x + ' ' + data.y);
+    socket.on('updatePos', data => {
+        ctx.clearRect(0, 0, 500, 500);
+        for (var i = 0; i < data.length; i++) {
+            ctx.fillText(data[i].number, data[i].x, data[i].y);
+        }
     })
-
-    //example emit message
-    socket.emit('samplemessage',{
-        x: 'this is a variable'
-    });
+    document.onkeydown = function(event){
+        if(event.keyCode === 68)    //d
+            socket.emit('keyPress',{inputId:'rights',state:true});
+        else if(event.keyCode === 83)   //s
+            socket.emit('keyPress',{inputId:'downs',state:true});
+        else if(event.keyCode === 65) //a
+            socket.emit('keyPress',{inputId:'lefts',state:true});
+        else if(event.keyCode === 87) // w
+            socket.emit('keyPress',{inputId:'ups',state:true});
+           
+    }
+    document.onkeyup = function(event){
+        if(event.keyCode === 68)    //d
+            socket.emit('keyPress',{inputId:'rights',state:false});
+        else if(event.keyCode === 83)   //s
+            socket.emit('keyPress',{inputId:'downs',state:false});
+        else if(event.keyCode === 65) //a
+            socket.emit('keyPress',{inputId:'lefts',state:false});
+        else if(event.keyCode === 87) // w
+            socket.emit('keyPress',{inputId:'ups',state:false});
+    }
 
 </script>
