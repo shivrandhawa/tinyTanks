@@ -8,34 +8,6 @@ console.log("My socket server is running");
 var SOCKETS = {}; //list of all the sockets connect
 var PLAYERS = {}; //list of all players
 
-// io object now has all functionalities of socket io library //
-
-
-
-var io = require('socket.io')(server, {});
-
-//////////////////////////////
-// ON NEW CONNECTION //
-//////////////////////////////
-/* assign each socket a random id, then add socket to SOCKETS list */
-io.sockets.on('connection', (socket) => {
-    socket.id = Math.random();//random id for each socket
-    socket.SAMPLEVARIABLE = "SAMPLE";
-    SOCKETS[socket.id] = socket;
-    Player.connect(socket);
-    ////////////////////////
-    // ON DISCONNECT EVENT//
-    ////////////////////////
-    socket.on('disconnect', () => {
-        delete SOCKETS[socket.id];
-        // Player.disconnect(socket); //not needed
-        
-        delete Player.list[socket.id];
-
-    });
-
-});
-
 //////////////////
 // THING OBJECT //
 //////////////////
@@ -55,8 +27,68 @@ var Thing = function () {
         self.y += self.yspeed
 
     }
+    self.getDistance = function (pt) {
+        return Math.sqrt(Math.pow(self.x - pt.x, 2) + Math.pow(self.y - pt.y, 2));
+    }
+
+    return self;
+};
+
+
+//////////////////
+// BULLET OBJECT//
+//////////////////
+
+var Bullets = (parent, angle) => {
+    var self = Thing();
+    self.id = Math.random();
+    self.xspeed = Math.cos(angle / 180 * Math.PI) * 10;
+    self.yspeed = Math.sin(angle / 180 * Math.PI) * 10;
+    self.expire = 0;
+    self.parent = parent;
+    self.remove = false;
+    var su_update = self.move;
+
+    //override to remove the bullet - THINGS dont get removed
+    self.move = () => {
+        if (self.expire++ > 100)
+            self.remove = true;
+        su_update();
+
+        for (var i in Player.list) {
+            var p = Player.list[i];
+            if (self.getDistance(p) < 32 && self.parent !== p.id) {
+                //handle collision. ex: hp--;
+                console.log('====================================');
+                console.log("collllision");
+                console.log('====================================');
+                self.remove = true;
+            }
+        }
+
+    }
+    Bullets.list[self.id] = self;
     return self;
 }
+Bullets.list = {};
+
+Bullets.move = () => {
+    //box contains information (position) about everyplayer in the game and sends it to every other player.
+    var box = [];
+    for (var i in Bullets.list) {
+        var bullet = Bullets.list[i];   //cnt do let socket = cuz used outside scope.
+        bullet.move();
+        if (bullet.remove)
+            delete Bullets.list[i];
+        else
+            box.push({
+                x: bullet.x,
+                y: bullet.y,
+            });
+    }
+    return box;
+}
+
 
 
 //////////////////
@@ -67,6 +99,8 @@ var Player = function (id) {
     self.id = id;
     self.number = "" + Math.floor(10 * Math.random());
     self.LEFT = false;
+    self.ATK = false;
+    self.mAng = 0; //HERERERE
     self.RIGHT = false;
     self.DOWN = false;
     self.UP = false;
@@ -74,9 +108,19 @@ var Player = function (id) {
 
 
     var su_update = self.move;
-    self.move = () => {
+    self.move = function () {
         self.moveUnit();
         su_update(); //TODO: change var
+        if (self.ATK) {
+            self.shoot(self.mAng);
+
+        }
+    }
+    self.shoot = angle => {
+        var bulls = Bullets(self.id, angle)
+        bulls.x = self.x;
+        bulls.y = self.y;
+
     }
 
     self.moveUnit = () => {
@@ -91,29 +135,27 @@ var Player = function (id) {
     }
     Player.list[id] = self;
     return self;
-
-}
+};
 Player.list = {}; //new method of holding the player list
-
 Player.connect = (socket) => {
     var player = Player(socket.id);
 
     socket.on('keyPress', data => {
         if (data.inputId === 'ups')
             player.UP = data.state;
-
         else if (data.inputId === 'lefts')
             player.LEFT = data.state;
         else if (data.inputId === 'downs')
             player.DOWN = data.state;
         else if (data.inputId === 'rights')
             player.RIGHT = data.state;
+        else if (data.inputId === 'atk')
+            player.ATK = data.state;
+        else if (data.inputId === 'mAng')
+            player.mAng = data.state;
 
     });
 };
-// Player.disconnect = socket =>{
-//     delete Player.list[socket.id]; //not needed unless other is needed
-// };
 
 Player.move = () => {
     //box contains information (position) about everyplayer in the game and sends it to every other player.
@@ -128,19 +170,66 @@ Player.move = () => {
         });
     }
     return box;
-}
+};
+// io object now has all functionalities of socket io library //
+var io = require('socket.io')(server, {});
+
+//////////////////////////////
+// ON NEW CONNECTION //
+//////////////////////////////
+/* assign each socket a random id, then add socket to SOCKETS list */
+io.sockets.on('connection', (socket) => {
+    socket.id = Math.random();//random id for each socket
+    socket.SAMPLEVARIABLE = "SAMPLE";
+    SOCKETS[socket.id] = socket;
+    Player.connect(socket);
+
+    ////////////////////////
+    //// sendmsg Event /////
+    ////////////////////////
+    socket.on('sendMsg', (data) => {
+        var sender = "id:" + (" " + socket.id).slice(2, 7);
+        for (var i in SOCKETS) {
+            SOCKETS[i].emit('displayMsg', sender + ' - ' + data)
+        }
+    });
+
+    socket.on('command', data => {
+        socket.emit('clientCom', (eval(data)));
+    })
+
+    ////////////////////////
+    // ON DISCONNECT EVENT//
+    ////////////////////////
+    socket.on('disconnect', () => {
+        delete SOCKETS[socket.id];
+        // Player.disconnect(socket); //not needed
+
+        delete Player.list[socket.id];
+
+    });
+
+});
+
+
+// Player.disconnect = socket =>{
+//     delete Player.list[socket.id]; //not needed unless other is needed
+// };
+
+
 
 setInterval(() => {
 
-   var box = Player.move();
+    var box = {
+        player: Player.move(),
+        bullet: Bullets.move()
+    }
 
-    
     for (var i in SOCKETS) {
         var socket = SOCKETS[i]
         socket.emit('updatePos', box);  //emit box to all client
 
     }
-
 
 }, 1000 / 25);
 
