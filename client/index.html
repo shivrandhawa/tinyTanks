@@ -1,0 +1,38 @@
+asdad
+
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>title</title>
+</head>
+
+<body>
+
+    <div id="gameDiv">
+        <canvas id="ctx" width="500" height="500" style="border:1px solid #000000; background-color: rgb(36, 145, 0);"></canvas>
+        <div id="chat-text" style="width:500px;height:100px;overflow-y:scroll">
+            <div>Hello!</div>
+        </div>
+
+        <form id="chat-form">
+            <input id="chat-input" type="text" style="width:500px"></input>
+        </form>
+    </div>
+
+
+    <p> HTML5 Boilerplate</p>
+
+</body>
+
+
+</html>
+
+<!-- socket CDN -->
+<script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
+<script>
+    //opening a connection to server that has the socketserver on it.
+    var socket = io.connect('http://localhost:2000"');
+</script>
