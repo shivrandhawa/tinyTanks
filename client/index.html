@@ -27,8 +27,15 @@
 <!-- socket CDN -->
 <script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
 <script>
+
+
+
+
+
     //link canvas dom element
     var ctx = document.getElementById('ctx').getContext('2d');
+
+
     var chatText = document.getElementById('chatText');
     var chatInput = document.getElementById('chatInput');
     var chatForm = document.getElementById('chatForm');
@@ -36,14 +43,21 @@
 
     //initializing connection
     var socket = io();
-
     socket.on('updatePos', data => {
+
         ctx.clearRect(0, 0, 500, 500);
         for (var i = 0; i < data.player.length; i++) {
-            ctx.fillText(data.player[i].number, data.player[i].x, data.player[i].y);
+            ctx.fillText(data.player[i].number, data.player[i].x,
+                data.player[i].y);
             ctx.fillStyle = "#FF0000";
-            ctx.fillRect(data.player[i].x, data.player[i].y, 10 + (data.player[i].lives) * 10, 8)
+            ctx.fillRect(data.player[i].x - 25, data.player[i].y + 14, 10 + (data.player[i].lives) * 10, 8)
             ctx.fillStyle = "#000";
+            var img = new Image();
+            img.src = "/client/img/player.png";
+
+
+            ctx.drawImage(img, data.player[i].x - 22, data.player[i].y - 30, 50, 50);
+
 
 
         }

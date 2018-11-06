@@ -2,7 +2,12 @@
 var express = require('express');
 var app = express();
 var server = app.listen(2000);
-app.use(express.static('client'))
+
+//TODO: changeer
+app.get('/', function (req, res) {
+    res.sendFile(__dirname + '/client/index.html');
+});
+app.use('/client', express.static(__dirname + '/client'));
 console.log("My socket server is running");
 
 var SOCKETS = {}; //list of all the sockets connect
