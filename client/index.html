@@ -1,4 +1,3 @@
-asdad
 
 <!DOCTYPE html>
 <html>
@@ -22,17 +21,25 @@ asdad
         </form>
     </div>
 
-
-    <p> HTML5 Boilerplate</p>
-
 </body>
-
-
 </html>
 
 <!-- socket CDN -->
 <script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
 <script>
-    //opening a connection to server that has the socketserver on it.
-    var socket = io.connect('http://localhost:2000"');
+    //initalizing connection
+    var socket = io();
+
+
+
+    //example receiving msg from server:
+    socket.on('msgfromserver', data =>{
+        console.log(data.x + ' ' + data.y);
+    })
+
+    //example emit message
+    socket.emit('samplemessage',{
+        x: 'this is a variable'
+    });
+
 </script>
