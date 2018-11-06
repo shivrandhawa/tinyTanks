@@ -12,7 +12,7 @@
     <div id="gameDiv">
         <canvas id="ctx" width="500" height="500" style="border:1px solid #000000; background-color: rgb(36, 145, 0);"></canvas>
         <div id="chatText" style="width:500px;height:100px;overflow-y:scroll">
-            <div>Hello!</div>
+            <div>Type !socketid to view your socketid</div>
         </div>
 
         <form id="chatForm">
@@ -32,7 +32,7 @@
     var chatText = document.getElementById('chatText');
     var chatInput = document.getElementById('chatInput');
     var chatForm = document.getElementById('chatForm');
-    ctx.font = '30px Arial';
+    ctx.font = '30px Courier New';
 
     //initializing connection
     var socket = io();
@@ -41,6 +41,11 @@
         ctx.clearRect(0, 0, 500, 500);
         for (var i = 0; i < data.player.length; i++) {
             ctx.fillText(data.player[i].number, data.player[i].x, data.player[i].y);
+            ctx.fillStyle = "#FF0000";
+            ctx.fillRect(data.player[i].x, data.player[i].y, 10 + (data.player[i].lives) * 10, 8)
+            ctx.fillStyle = "#000";
+
+
         }
         for (var i = 0; i < data.bullet.length; i++) {
             ctx.fillRect(data.bullet[i].x - 5, data.bullet[i].y - 5, 10, 10);

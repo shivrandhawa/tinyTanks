@@ -18,6 +18,7 @@ var Thing = function () {
         id: " ",
         xspeed: 0,
         yspeed: 0,
+        lives: 10,
     }
     self.move = () => {
         self.moveUnit();
@@ -59,9 +60,18 @@ var Bullets = (parent, angle) => {
             var p = Player.list[i];
             if (self.getDistance(p) < 32 && self.parent !== p.id) {
                 //handle collision. ex: hp--;
-                console.log('====================================');
-                console.log("collllision");
-                console.log('====================================');
+                // console.log('====================================');
+                // console.log(p.id + ':' + [self.parent.points]);
+
+
+                Player.list[p.id].lives--;
+                if (Player.list[p.id].lives <= 0)
+                    Player.list[p.id].remove = true;
+
+                console.log('player:' + p.id + "has been shot, lives left:" + Player.list[p.id].lives)
+
+                    ;
+                // console.log('====================================');
                 self.remove = true;
             }
         }
@@ -102,9 +112,11 @@ var Player = function (id) {
     self.ATK = false;
     self.mAng = 0; //HERERERE
     self.RIGHT = false;
+    self.re = false;
     self.DOWN = false;
     self.UP = false;
     self.maxSpd = 10; //TODO: change var
+    self.lives = 5;
 
 
     var su_update = self.move;
@@ -115,6 +127,18 @@ var Player = function (id) {
             self.shoot(self.mAng);
 
         }
+        for (var i in Player.list) {
+            if (self.lives == 0) {
+                console.log('====================================');
+                console.log(self.re);
+                console.log('====================================');
+                self.re = true;
+                delete Player.list[self.id];
+                for (var i in SOCKETS) {
+                    SOCKETS[i].emit('displayMsg', "PLAYER ELIMINATED")
+                }
+            }
+        }
     }
     self.shoot = angle => {
         var bulls = Bullets(self.id, angle)
@@ -122,6 +146,11 @@ var Player = function (id) {
         bulls.y = self.y;
 
     }
+
+    // self.draw =() => {
+    //     var hpWidth = 3
+    //     ctx.fillRect(self.x - hpWidth/2,self.y -40,hpWidth,4)
+    // }
 
     self.moveUnit = () => {
         if (self.RIGHT)
@@ -139,7 +168,9 @@ var Player = function (id) {
 Player.list = {}; //new method of holding the player list
 Player.connect = (socket) => {
     var player = Player(socket.id);
-
+    console.log('====================================');
+    console.log(player.id);
+    console.log('====================================');
     socket.on('keyPress', data => {
         if (data.inputId === 'ups')
             player.UP = data.state;
@@ -166,7 +197,8 @@ Player.move = () => {
         box.push({
             x: player.x,
             y: player.y,
-            number: player.number
+            number: player.number,
+            lives: player.lives,
         });
     }
     return box;
