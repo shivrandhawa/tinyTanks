@@ -3,15 +3,14 @@ var express = require('express');
 var app = express();
 var server = app.listen(2000);
 
-//TODO: changeer
-app.get('/', function (req, res) {
-    res.sendFile(__dirname + '/client/index.html');
+
+app.get('/', function (req, rep) {
+    rep.sendFile(__dirname + '/client/index.html');
 });
 app.use('/client', express.static(__dirname + '/client'));
 console.log("My socket server is running");
 
 var SOCKETS = {}; //list of all the sockets connect
-var PLAYERS = {}; //list of all players
 
 //////////////////
 // THING OBJECT //
@@ -33,7 +32,7 @@ var Thing = function () {
         self.y += self.yspeed
 
     }
-    self.getDistance = function (pt) {
+    self.dis = function (pt) {
         return Math.sqrt(Math.pow(self.x - pt.x, 2) + Math.pow(self.y - pt.y, 2));
     }
 
@@ -63,8 +62,7 @@ var Bullets = (parent, angle) => {
 
         for (var i in Player.list) {
             var p = Player.list[i];
-            if (self.getDistance(p) < 32 && self.parent !== p.id) {
-                //handle collision. ex: hp--;
+            if (self.dis(p) < 32 && self.parent !== p.id) {
                 // console.log('====================================');
                 // console.log(p.id + ':' + [self.parent.points]);
 
@@ -120,16 +118,18 @@ var Player = function (id) {
     self.re = false;
     self.DOWN = false;
     self.UP = false;
-    self.maxSpd = 10; //TODO: change var
+    self.move_speed = 10;
     self.lives = 5;
-
+    self.name = "shiv"
 
     var su_update = self.move;
     self.move = function () {
         self.moveUnit();
-        su_update(); //TODO: change var
+        su_update();
         if (self.ATK) {
-            self.shoot(self.mAng);
+            setTimeout(() => {
+                self.shoot(self.mAng);
+            }), 500 / 25;
 
         }
         for (var i in Player.list) {
@@ -147,6 +147,7 @@ var Player = function (id) {
     }
     self.shoot = angle => {
         var bulls = Bullets(self.id, angle)
+
         bulls.x = self.x;
         bulls.y = self.y;
 
@@ -159,13 +160,13 @@ var Player = function (id) {
 
     self.moveUnit = () => {
         if (self.RIGHT)
-            self.x += self.maxSpd;
+            self.x += self.move_speed;
         if (self.LEFT)
-            self.x -= self.maxSpd;
+            self.x -= self.move_speed;
         if (self.UP)
-            self.y -= self.maxSpd;
+            self.y -= self.move_speed;
         if (self.DOWN)
-            self.y += self.maxSpd;
+            self.y += self.move_speed;
     }
     Player.list[id] = self;
     return self;
@@ -211,6 +212,8 @@ Player.move = () => {
 // io object now has all functionalities of socket io library //
 var io = require('socket.io')(server, {});
 
+
+
 //////////////////////////////
 // ON NEW CONNECTION //
 //////////////////////////////
@@ -225,7 +228,7 @@ io.sockets.on('connection', (socket) => {
     //// sendmsg Event /////
     ////////////////////////
     socket.on('sendMsg', (data) => {
-        var sender = "id:" + (" " + socket.id).slice(2, 7);
+        var sender = "id:" + (" " + socket.id);
         for (var i in SOCKETS) {
             SOCKETS[i].emit('displayMsg', sender + ' - ' + data)
         }
@@ -234,6 +237,16 @@ io.sockets.on('connection', (socket) => {
     socket.on('command', data => {
         socket.emit('clientCom', (eval(data)));
     })
+
+
+    socket.on('namer', data => {
+        socket.name = 'shiv'
+        socket.emit('clientCom', (eval(data)));
+        console.log('====================================');
+        // console.log(self.name = (eval(data)));
+        console.log('====================================');
+    })
+
 
     ////////////////////////
     // ON DISCONNECT EVENT//

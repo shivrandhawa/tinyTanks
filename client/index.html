@@ -47,8 +47,8 @@
 
         ctx.clearRect(0, 0, 500, 500);
         for (var i = 0; i < data.player.length; i++) {
-            ctx.fillText(data.player[i].number, data.player[i].x,
-                data.player[i].y);
+            ctx.fillText(data.player[i].lives, data.player[i].x,
+                data.player[i].y + 50);
             ctx.fillStyle = "#FF0000";
             ctx.fillRect(data.player[i].x - 25, data.player[i].y + 14, 10 + (data.player[i].lives) * 10, 8)
             ctx.fillStyle = "#000";
@@ -56,13 +56,13 @@
             img.src = "/client/img/player.png";
 
 
-            ctx.drawImage(img, data.player[i].x - 22, data.player[i].y - 30, 50, 50);
+            ctx.drawImage(img, data.player[i].x - 33, data.player[i].y - 25, 50, 50);
 
 
 
         }
         for (var i = 0; i < data.bullet.length; i++) {
-            ctx.fillRect(data.bullet[i].x - 5, data.bullet[i].y - 5, 10, 10);
+            ctx.fillRect(data.bullet[i].x - 5, data.bullet[i].y - 5, 4, 4);
         }
     })
     document.onkeydown = function (event) {
@@ -89,6 +89,7 @@
 
     socket.on('clientCom', d => {
         chatText.innerHTML += '<div>' + "[sys] " + d + '<div>';
+        //TODO: make sys messages red
     })
 
     socket.on('displayMsg', d => {
@@ -98,6 +99,8 @@
         e.preventDefault();
         if (chatInput.value[0] === '!')
             socket.emit('command', chatInput.value.slice(1))
+        else if (chatInput.value[0] === '/')
+            socket.emit('namer', chatInput.value.slice(1))
         else
             socket.emit('sendMsg', chatInput.value);
         chatInput.value = '';
