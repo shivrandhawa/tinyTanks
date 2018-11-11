@@ -1,14 +1,15 @@
 
 var express = require('express');
 var app = express();
-var server = app.listen(2000);
-
+var server = require('http').Server(app);
 
 app.get('/', function (req, rep) {
-    rep.sendFile(__dirname + '/client/index.html');
+    rep.sendFile(__dirname + '/index.html');
 });
 app.use('/client', express.static(__dirname + '/client'));
 console.log("My socket server is running");
+
+server.listen(2000);
 
 var SOCKETS = {}; //list of all the sockets connect
 
@@ -19,7 +20,7 @@ var Thing = function () {
     var self = {
         x: 250,  //center of play area
         y: 250,
-        id: " ",
+        id: "",
         xspeed: 0,
         yspeed: 0,
         lives: 10,
@@ -28,22 +29,19 @@ var Thing = function () {
         self.moveUnit();
     }
     self.moveUnit = () => {
-        self.x += self.xspeed
-        self.y += self.yspeed
+        self.x += self.xspeed;
+        self.y += self.yspeed;
 
     }
-    self.dis = function (pt) {
-        return Math.sqrt(Math.pow(self.x - pt.x, 2) + Math.pow(self.y - pt.y, 2));
+    self.dis = function (k) {
+        return Math.sqrt(Math.pow(self.x - k.x, 2) + Math.pow(self.y - k.y, 2));
     }
 
     return self;
 };
-
-
 //////////////////
 // BULLET OBJECT//
 //////////////////
-
 var Bullets = (parent, angle) => {
     var self = Thing();
     self.id = Math.random();
@@ -62,27 +60,24 @@ var Bullets = (parent, angle) => {
 
         for (var i in Player.list) {
             var p = Player.list[i];
-            if (self.dis(p) < 32 && self.parent !== p.id) {
+            if (self.dis(p) < 20 && self.parent !== p.id) {
                 // console.log('====================================');
                 // console.log(p.id + ':' + [self.parent.points]);
 
 
                 Player.list[p.id].lives--;
-                if (Player.list[p.id].lives <= 0)
+                if (Player.list[p.id].lives === 0)
                     Player.list[p.id].remove = true;
 
-                console.log('player:' + p.id + "has been shot, lives left:" + Player.list[p.id].lives)
-
-                    ;
+                console.log('player:' + p.id + "has been shot, lives left:" + Player.list[p.id].lives);
                 // console.log('====================================');
                 self.remove = true;
             }
         }
-
-    }
+    };
     Bullets.list[self.id] = self;
     return self;
-}
+};
 Bullets.list = {};
 
 Bullets.move = () => {
@@ -101,9 +96,6 @@ Bullets.move = () => {
     }
     return box;
 }
-
-
-
 //////////////////
 // PLAYER OBJECT //
 //////////////////
@@ -113,23 +105,23 @@ var Player = function (id) {
     self.number = "" + Math.floor(10 * Math.random());
     self.LEFT = false;
     self.ATK = false;
-    self.mAng = 0; //HERERERE
+    self.mAng = 0;
     self.RIGHT = false;
     self.re = false;
     self.DOWN = false;
     self.UP = false;
     self.move_speed = 10;
     self.lives = 5;
-    self.name = "shiv"
+    self.name = "shiv";
 
     var su_update = self.move;
     self.move = function () {
         self.moveUnit();
         su_update();
         if (self.ATK) {
-            setTimeout(() => {
-                self.shoot(self.mAng);
-            }), 500 / 25;
+            //timeout function not implemented properly/
+            self.shoot(self.mAng);
+
 
         }
         for (var i in Player.list) {
@@ -144,20 +136,13 @@ var Player = function (id) {
                 }
             }
         }
-    }
+    };
     self.shoot = angle => {
-        var bulls = Bullets(self.id, angle)
-
+        var bulls = Bullets(self.id, angle);
         bulls.x = self.x;
         bulls.y = self.y;
 
-    }
-
-    // self.draw =() => {
-    //     var hpWidth = 3
-    //     ctx.fillRect(self.x - hpWidth/2,self.y -40,hpWidth,4)
-    // }
-
+    };
     self.moveUnit = () => {
         if (self.RIGHT)
             self.x += self.move_speed;
@@ -177,7 +162,7 @@ Player.connect = (socket) => {
     console.log('====================================');
     console.log(player.id);
     console.log('====================================');
-    socket.on('keyPress', data => {
+    socket.on('press_key', data => {
         if (data.inputId === 'ups')
             player.UP = data.state;
         else if (data.inputId === 'lefts')
@@ -193,7 +178,6 @@ Player.connect = (socket) => {
 
     });
 };
-
 Player.move = () => {
     //box contains information (position) about everyplayer in the game and sends it to every other player.
     var box = [];
@@ -236,17 +220,16 @@ io.sockets.on('connection', (socket) => {
 
     socket.on('command', data => {
         socket.emit('clientCom', (eval(data)));
-    })
 
+    })
 
     socket.on('namer', data => {
-        socket.name = 'shiv'
-        socket.emit('clientCom', (eval(data)));
+        // socket.emit('clientCom', (eval(data)));
         console.log('====================================');
+        socket.id = data;   //cahnges the socket id to the entered value
         // console.log(self.name = (eval(data)));
         console.log('====================================');
-    })
-
+    });
 
     ////////////////////////
     // ON DISCONNECT EVENT//
@@ -254,22 +237,15 @@ io.sockets.on('connection', (socket) => {
     socket.on('disconnect', () => {
         delete SOCKETS[socket.id];
         // Player.disconnect(socket); //not needed
-
         delete Player.list[socket.id];
-
     });
 
 });
-
-
 // Player.disconnect = socket =>{
 //     delete Player.list[socket.id]; //not needed unless other is needed
 // };
 
-
-
 setInterval(() => {
-
     var box = {
         player: Player.move(),
         bullet: Bullets.move()
