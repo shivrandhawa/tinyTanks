@@ -9,6 +9,14 @@
 
 <body>
 
+    <div id="signDiv">
+        UN:
+        <input type="text" id="signin_username">
+        <br> PASS:
+        <input type="text" id="signin_password">
+        <button id="signUp">Sign up!</button>
+        <button id="signIn">Sign In!</button>
+    </div>
     <div id="gameDiv">
         <canvas id="ctx" width="850" height="500" style="border:1px solid #000000; background-color: rgb(73, 201, 30);"></canvas>
         <div id="chatText" style="width:500px;height:100px;overflow-y:scroll">
@@ -29,10 +37,42 @@
 <!-- socket CDN -->
 <script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
 <script>
+    var socket = io();
 
+    var gameDiv = document.getElementById('gameDiv');
+    var signDiv = document.getElementById('signDiv');
+    var usernameText = document.getElementById('signin_username');
+    var passwordText = document.getElementById('signin_password');
+    var signinBtn = document.getElementById('signIn');
+    var signupBtn = document.getElementById('signUp');
 
+    //emit a package called signin that has the value of username and password boxes
+    //TODO: change username to un   and change password to pass
+    signinBtn.onclick = () => {
+        socket.emit('signin', { username: usernameText.value, password: passwordText.value })
+    }
 
+    signupBtn.onclick = () => {
+        socket.emit('signup', { username: usernameText.value, password: passwordText.value })
+    }
 
+    socket.on('signin-res', (data) => {
+        if (data.success) {
+            signDiv.style.display = 'none'
+            gameDiv.style.display = 'inline-block';
+        }
+        else
+            alert("sign in failed");
+    });
+
+    //alert  boxes.
+    socket.on('signup-res', (data) => {
+        if (data.success) {
+            alert('signup successful')
+        }
+        else
+            alert('signup unsuccessful')
+    });
 
     //link canvas dom element
     var ctx = document.getElementById('ctx').getContext('2d');
@@ -44,7 +84,6 @@
     ctx.font = '20px Courier New';
 
     //initializing connection
-    var socket = io();
     socket.on('updatePos', data => {
 
         ctx.clearRect(0, 0, 850, 500);
@@ -128,6 +167,8 @@
     document.onmouseup = function (ev) {
         socket.emit('press_key', { inputId: 'atk', state: false });
     }
+
+
 
 
 </script>

@@ -1,3 +1,7 @@
+var mongojs = require("mongojs");
+//creates connection to the database
+var db = mongojs('localhost:27017/myGame', ['account', 'score']);
+// db.account.insert({ username: "guest", password: "guest" });
 
 var express = require('express');
 var app = express();
@@ -6,6 +10,27 @@ var server = require('http').Server(app);
 app.get('/', function (req, rep) {
     rep.sendFile(__dirname + '/index.html');
 });
+
+
+//gets all the documents in the account collection
+app.get('/api/users', function (req, res) {
+    db.account.find(function (err, docs) {
+        res.send(docs);         //docs is an array of all ducments in the 'account' collection 
+    })
+});
+
+//get all document of user with :name param
+app.get('/api/users/:name', function (req, res) {
+    db.account.find({ username: req.params.name }, function (err, docs) {
+        res.send(docs);
+        //TODO: handle 404 status errors
+    })
+});
+
+
+
+
+
 app.use('/client', express.static(__dirname + '/client'));
 console.log("My socket server is running");
 
@@ -13,6 +38,39 @@ server.listen(2000);
 
 var SOCKETS = {}; //list of all the sockets connect
 
+var USERS = {
+    //username:password
+    "bob": "asd",
+    "shiv": "shiv",
+    "bob2": "bob",
+
+};
+
+var isUsernameTaken = (data, cb) => {
+    db.account.find({ username: data.username }, function (err, res) {
+        if (res.length > 0)
+            cb(true);
+        else
+            cb(false);
+    });
+}
+
+var addUser = (data, cb) => {
+    db.account.insert({ username: data.username, password: data.password }, function (err, res) {
+        if (res.length > 0)
+            cb(true);
+        else
+            cb(false);
+    });
+};
+var isValidPass = (data, cb) => {
+    db.account.find({ username: data.username, password: data.password }, function (err, res) {
+        if (res.length > 0)
+            cb(true);
+        else
+            cb(false);
+    });
+}
 //////////////////
 // THING OBJECT //
 //////////////////
@@ -35,8 +93,7 @@ var Thing = function () {
     }
     self.dis = function (k) {
         return Math.sqrt(Math.pow(self.x - k.x, 2) + Math.pow(self.y - k.y, 2));
-    }
-
+    };
     return self;
 };
 //////////////////
@@ -63,14 +120,15 @@ var Bullets = (parent, angle) => {
             if (self.dis(p) < 20 && self.parent !== p.id) {
                 // console.log('====================================');
                 // console.log(p.id + ':' + [self.parent.points]);
-
-
                 Player.list[p.id].lives--;
-                if (Player.list[p.id].lives === 0)
+                if (Player.list[p.id].lives === 0) {
                     Player.list[p.id].remove = true;
+                    Player.list[self.parent].score++;
+                    db.account.update({ username: Player.list[self.parent].name }, { $set: { score: Player.list[self.parent].score } });
+                }
+                // console.log('player: ' + p.id + "has been shot, lives left:" + Player.list[p.id].lives);
+                //  console.log("player: " + self.parent + "points:  " + Player.list[self.parent].score);
 
-                console.log('player:' + p.id + "has been shot, lives left:" + Player.list[p.id].lives);
-                // console.log('====================================');
                 self.remove = true;
             }
         }
@@ -107,12 +165,13 @@ var Player = function (id) {
     self.ATK = false;
     self.mAng = 0;
     self.RIGHT = false;
-    self.re = false;
+    self.remove = false;
     self.DOWN = false;
     self.UP = false;
     self.move_speed = 10;
     self.lives = 5;
-    self.name = "shiv";
+    self.score = 0;
+    self.name = "no_name";
 
     var su_update = self.move;
     self.move = function () {
@@ -126,10 +185,7 @@ var Player = function (id) {
         }
         for (var i in Player.list) {
             if (self.lives == 0) {
-                console.log('====================================');
-                console.log(self.re);
-                console.log('====================================');
-                self.re = true;
+                self.remove = true;
                 delete Player.list[self.id];
                 for (var i in SOCKETS) {
                     SOCKETS[i].emit('displayMsg', "PLAYER ELIMINATED")
@@ -159,9 +215,6 @@ var Player = function (id) {
 Player.list = {}; //new method of holding the player list
 Player.connect = (socket) => {
     var player = Player(socket.id);
-    console.log('====================================');
-    console.log(player.id);
-    console.log('====================================');
     socket.on('press_key', data => {
         if (data.inputId === 'ups')
             player.UP = data.state;
@@ -189,14 +242,14 @@ Player.move = () => {
             y: player.y,
             number: player.number,
             lives: player.lives,
+            score: player.score,
         });
     }
     return box;
 };
+
 // io object now has all functionalities of socket io library //
 var io = require('socket.io')(server, {});
-
-
 
 //////////////////////////////
 // ON NEW CONNECTION //
@@ -206,8 +259,33 @@ io.sockets.on('connection', (socket) => {
     socket.id = Math.random();//random id for each socket
     socket.SAMPLEVARIABLE = "SAMPLE";
     SOCKETS[socket.id] = socket;
-    Player.connect(socket);
 
+    socket.on('signin', (data) => {
+        isValidPass(data, function (res) {
+            if (res) {
+
+                Player.connect(socket);
+                Player.list[socket.id].name = data.username;
+                socket.emit('signin-res', { success: true });
+
+            } else {
+                socket.emit('signin-res', { success: false });
+
+            }
+        });
+    });
+    socket.on('signup', (data) => {
+        isUsernameTaken(data, function (res) {
+            if (res) {
+                socket.emit('signup-res', { success: false });
+            } else {
+                addUser(data, function () {
+                    socket.emit('signup-res', { success: true });
+
+                })
+            }
+        })
+    });
     ////////////////////////
     //// sendmsg Event /////
     ////////////////////////
@@ -225,10 +303,8 @@ io.sockets.on('connection', (socket) => {
 
     socket.on('namer', data => {
         // socket.emit('clientCom', (eval(data)));
-        console.log('====================================');
         socket.id = data;   //cahnges the socket id to the entered value
         // console.log(self.name = (eval(data)));
-        console.log('====================================');
     });
 
     ////////////////////////
