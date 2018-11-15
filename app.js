@@ -1,3 +1,5 @@
+
+var PORT = process.env.PORT || 2000;
 var mongojs = require("mongojs");
 //creates connection to the database
 var db = mongojs('localhost:27017/myGame', ['account', 'score']);
@@ -61,7 +63,7 @@ app.get('/api/users/score', function (req, res) {
 app.use('/client', express.static(__dirname + '/client'));
 console.log("My socket server is running");
 
-server.listen(2000);
+server.listen(PORT);
 
 var SOCKETS = {}; //list of all the sockets connect
 
