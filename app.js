@@ -44,7 +44,7 @@ app.get('/api/users', function (req, res) {
 
 
 //get specifc users score - using api headers
-app.get('/api/users/score', function (req, res) {
+app.post('/api/users/score', function (req, res) {
     //hard coded token 
     var token = req.headers['apptoken'];
     var userid = req.headers['userid'].toLowerCase();
