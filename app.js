@@ -2,7 +2,7 @@
 var PORT = process.env.PORT || 2000;
 var mongojs = require("mongojs");
 //creates connection to the database
-var db = mongojs('localhost:27017/myGame', ['account', 'score']);
+var db = mongojs('mongodb://shiv:master1@ds263493.mlab.com:63493/tinytanksdb', ['account', 'score']);
 // db.account.insert({ username: "guest", password: "guest" });
 
 var express = require('express');
