@@ -15,22 +15,49 @@ app.get('/', function (req, rep) {
 //gets all the documents in the account collection
 app.get('/api/users', function (req, res) {
     db.account.find(function (err, docs) {
-        res.send(docs);         //docs is an array of all ducments in the 'account' collection 
+        //hardcoded apptoken
+        var token = req.headers['apptoken'];
+        var userid = req.headers['userid'];
+
+        /* var newtest = JSON.stringify(docs)
+        var new2 = JSON.parse(newtest) */
+        var output = docs.map(s => Object.values(s)[1]);
+        res.send(output);
+
+        //res.send((token + "::" + userid));         //docs is an array of all documents in the 'account' collection 
+
     })
 });
 
 //get all document of user with :name param
-app.get('/api/users/:name', function (req, res) {
-    db.account.find({ username: req.params.name }, function (err, docs) {
-        res.send(docs);
-        //TODO: handle 404 status errors
-    })
+// app.get('/api/users/:name', function (req, res) {
+//     //hardcoded apptoken
+//     var token = req.headers['apptoken'];
+//     var userid = req.headers['userid'];
+//     db.account.find({ username: req.params.name }, function (err, docs) {
+//         res.send(docs);
+//         //TODO: handle 404 status errors
+//     })
+// });
+
+
+//get specifc users score - using api headers
+app.get('/api/users/score', function (req, res) {
+    //hard coded token 
+    var token = req.headers['apptoken'];
+    var userid = req.headers['userid'].toLowerCase();
+    //ingame name
+    var ign = userid.substr(0, userid.indexOf("badge"))
+    db.account.find({ username: ign }, function (err, docs) {
+        var jsonObj = {
+            "text": "tanks score: " + docs[0].score,
+            "link": "app.tanks.url",
+            "icon-url": "tanksicon.png"
+        };
+        res.send(jsonObj);
+
+    });
 });
-
-
-
-
-
 app.use('/client', express.static(__dirname + '/client'));
 console.log("My socket server is running");
 
