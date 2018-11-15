@@ -53,7 +53,7 @@ app.get('/api/users/score', function (req, res) {
     db.account.find({ username: ign }, function (err, docs) {
         var jsonObj = {
             "text": "tanks score: " + docs[0].score,
-            "link": "app.tanks.url",
+            "link": "https://tiny-tanks.herokuapp.com/",
             "icon-url": "tanksicon.png"
         };
         res.send(jsonObj);
