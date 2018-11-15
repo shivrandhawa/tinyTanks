@@ -1,16 +1,16 @@
 
-How to use the TankGame API with POSTMAN
+Using the Tank Game API
 
-From postman send a GET request to
+From postman send a post request to
 https://tiny-tanks.herokuapp.com/api/users/score
-
 
 With The Headers:    
 AppToken. :  !@duh!
 UserId  :    Tombadgeid1111
 
 
-The returned JSON object will be in the following format for the player entered in the userid header 
+The returned JSON object will be in the following format 
+For the player entered in the userid header 
 
 {
     "text": "tanks score: 2",
@@ -22,3 +22,4 @@ The returned JSON object will be in the following format for the player entered 
 Other UserID's currently in the database for testing
 shivbadgeid123
 guestbadgeid11
+tombadgeid1111

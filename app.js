@@ -43,7 +43,7 @@ app.get('/api/users', function (req, res) {
 // });
 
 
-//get specifc users score - using api headers
+//post specifc users score - using api headers
 app.post('/api/users/score', function (req, res) {
     //hard coded token 
     var token = req.headers['apptoken'];
