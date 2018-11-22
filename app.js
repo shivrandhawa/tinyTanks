@@ -46,7 +46,7 @@ app.get('/api/users', function (req, res) {
 //post specifc users score - using api headers
 app.post('/api/users/score', function (req, res) {
     //hard coded token 
-    var token = req.headers['apptoken'];
+    var token = req.headers['authorization'];
     var userid = req.headers['userid'].toLowerCase();
     //ingame name
     var ign = userid.substr(0, userid.indexOf("badge"))
@@ -60,6 +60,24 @@ app.post('/api/users/score', function (req, res) {
 
     });
 });
+
+app.post('/api/users/landing', function (req, res) {
+    //hard coded token 
+    var token = req.headers['authorization'];
+    var userid = req.headers['userid'].toLowerCase();
+    //ingame name
+    var ign = userid.substr(0, userid.indexOf("badge"))
+    db.account.find({ username: ign }, function (err, docs) {
+        var jsonObj = {
+            "text": "tanks score: " + docs[0].score,
+            "link": "https://tiny-tanks.herokuapp.com/",
+            "icon-url": "tanksicon.png"
+        };
+        res.send(jsonObj);
+
+    });
+});
+
 app.use('/client', express.static(__dirname + '/client'));
 console.log("My socket server is running");
 
