@@ -104,7 +104,6 @@ app.post('/api/users/score', function (req, res) {
     }
 });
 
-
 app.post('/api/users/landing', function (req, res) {
     var ign;
     var token = req.headers['authorization'];
@@ -462,11 +461,14 @@ io.sockets.on('connection', (socket) => {
                 }
                 for (var i in SOCKETS) {
                     SOCKETS[i].emit('displayMsg', " " + data.bb_name + " joined");
+                    SOCKETS[i].emit("add_player", data.bb_name);
+
                 }
             });
         } catch (err) {
             //TODO: handle error
         }
+
     });
     socket.on('namer', data => {
         // socket.emit('clientCom', (eval(data)));
@@ -492,6 +494,7 @@ io.sockets.on('connection', (socket) => {
 
         delete Player.list[socket.id];
     });
+
 
 });
 // Player.disconnect = socket =>{
