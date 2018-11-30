@@ -42,40 +42,127 @@ app.get('/api/users', function (req, res) {
 // });
 
 
-//post specifc users score - using api headers
+//get specifc users score - using api headers
 app.post('/api/users/score', function (req, res) {
+    console.log(req.headers, req.body)
+    var ign;
     //hard coded token 
     var token = req.headers['authorization'];
-    var userid = req.headers['userid'].toLowerCase();
-    //ingame name
-    var ign = userid.substr(0, userid.indexOf("badge"))
-    db.account.find({ username: ign }, function (err, docs) {
-        var jsonObj = {
-            "text": "tanks score: " + docs[0].score,
-            "link": "https://tiny-tanks.herokuapp.com/",
-            "icon-url": "tanksicon.png"
-        };
-        res.send(jsonObj);
+    if (token != "tzznk") {
+        res.status(403);
+        res.send("token error");
+    } else {
+        var userid = req.headers['userid'];
 
-    });
+        if (userid == "f3488cc0-a908-4e23-a1d8-3dcbf184f040") {
+            ign = "tom";
+        } else {
+            ign = userid;
+        }
+        try {
+            db.account.find({ username: ign }, function (err, docs) {
+                var jsonObj = {
+                    "request": {
+                        "href": "https://tiny-tanks.herokuapp.com/api/users/landing",
+                        "userid": ign,
+                        "token": "tzznk"
+                    },
+                    "badgeData": [
+                        {
+                            "link": "https://tiny-tanks.herokuapp.com",
+                            "icon-url": "url",
+                            "text": "score: 22"
+
+                        }
+                    ]
+                }
+                console.log('Returning', jsonObj);
+                res.status(200).json(jsonObj);
+            });
+        }
+        catch (err) {
+            var jsonObj = {
+                "request": {
+                    "href": "https://tiny-tanks.herokuapp.com/api/users/landing",
+                    "userid": "defaultUser",
+                    "token": "tzznk"
+                },
+                "badgeData": [
+                    {
+                        "name": "tiny tanks",
+                        "icon-url": "url",
+                        "data": [
+                            "score: 99"
+                        ]
+                    }
+                ]
+            }
+            console.log('Returning', jsonObj);
+            res.send(jsonObj);
+        }
+
+    }
 });
 
 app.post('/api/users/landing', function (req, res) {
-    //hard coded token 
+    var ign;
     var token = req.headers['authorization'];
-    var userid = req.headers['userid'].toLowerCase();
-    //ingame name
-    var ign = userid.substr(0, userid.indexOf("badge"))
-    db.account.find({ username: ign }, function (err, docs) {
-        var jsonObj = {
-            "text": "tanks score: " + docs[0].score,
-            "link": "https://tiny-tanks.herokuapp.com/",
-            "icon-url": "tanksicon.png"
-        };
-        res.send(jsonObj);
+    if (token != "tzznk") {
+        res.status(403);
+        res.send("authorization error");
+    } else {
+        var userid = req.headers['userid'];
+        if (userid == "f3488cc0-a908-4e23-a1d8-3dcbf184f040") {
+            ign = "tom";
+        } else {
+            ign = userid;
+        }
+        //ingame name
+        try {
+            db.account.find({ username: ign }, function (err, docs) {
+                var jsonObj = {
+                    "request": {
+                        "href": "https://tiny-tanks.herokuapp.com/api/users/landing",
+                        "userid": ign,
+                        "token": "tzznk"
+                    },
+                    "landingData": [
+                        {
+                            "name": "tiny tanks",
+                            "img-url": "url",
+                            "link": "https://tiny-tanks.herokuapp.com",
+                            "data": [
+                                "score: 22"
+                            ]
+                        }
+                    ]
+                }
+                res.send(jsonObj);
 
-    });
+            });
+        }
+        catch (err) {
+            var jsonObj = {
+                "request": {
+                    "href": "https://tiny-tanks.herokuapp.com/api/users/landing",
+                    "userid": "defaultUser",
+                    "token": "tzznk"
+                },
+                "landingData": [
+                    {
+                        "name": "tiny tanks",
+                        "img-url": "url",
+                        "data": [
+                            "score: 99"
+                        ]
+                    }
+                ]
+            }
+            res.send(jsonObj);
+        }
+    }
 });
+
 
 app.use('/client', express.static(__dirname + '/client'));
 console.log("My socket server is running");
@@ -84,13 +171,6 @@ server.listen(PORT);
 
 var SOCKETS = {}; //list of all the sockets connect
 
-var USERS = {
-    //username:password
-    "bob": "asd",
-    "shiv": "shiv",
-    "bob2": "bob",
-
-};
 
 var isUsernameTaken = (data, cb) => {
     db.account.find({ username: data.username }, function (err, res) {
@@ -381,11 +461,14 @@ io.sockets.on('connection', (socket) => {
                 }
                 for (var i in SOCKETS) {
                     SOCKETS[i].emit('displayMsg', " " + data.bb_name + " joined");
+                    SOCKETS[i].emit("add_player", data.bb_name);
+
                 }
             });
         } catch (err) {
             //TODO: handle error
         }
+
     });
     socket.on('namer', data => {
         // socket.emit('clientCom', (eval(data)));
@@ -411,6 +494,7 @@ io.sockets.on('connection', (socket) => {
 
         delete Player.list[socket.id];
     });
+
 
 });
 // Player.disconnect = socket =>{

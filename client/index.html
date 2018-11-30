@@ -24,14 +24,17 @@
     <div id="gameDiv">
         <canvas id="ctx" width="850" height="500" style="border:1px solid #000000; background-color: rgb(73, 201, 30);"></canvas>
         <div id="chatText" style="width:500px;height:100px;overflow-y:scroll">
-            <div>type / [name] to change your name
-                <br>type ! to access server commands</br>
-            </div>
+            <!-- <div>type / [name] to change your name -->
+            <!-- <br>type ! to access server commands</br> -->
+            <!-- </div> -->
         </div>
 
         <form id="chatForm">
             <input id="chatInput" type="text" style="width:500px"></input>
         </form>
+
+        <button value="Refresh Page" onClick="window.location.reload()">re</button>
+
     </div>
 
 </body>
@@ -41,6 +44,8 @@
 <!-- socket CDN -->
 <script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
 <script src="./tokenHandler.js"></script>
+<link rel="stylesheet" href="style.css" type="text/css">
+
 <script>
     var socket = io();
 
@@ -52,7 +57,6 @@
     var signupBtn = document.getElementById('signUp');
     var signin_BB = document.getElementById('signinBB');
     var spew = document.getElementById('spew');
-
     let loggedIn = badgeBookTokenHandler.isBadgeBookUserLoggedIn();
 
     if (loggedIn) {
@@ -64,11 +68,13 @@
         console.log(badgeBookTokenHandler.getCurrentUserClaims());
         console.log('====================================');
         socket.emit('bb_signin', bb_pack)
-
+        signDiv.style.display = 'none'
+        gameDiv.style.display = 'inline-block';
     }
 
     signin_BB.onclick = () => {
         badgeBookTokenHandler.loginWithBadgeBook();
+
     }
     //TODO: change spew to play as guest
     spew.onclick = () => {
@@ -181,8 +187,10 @@
         //TODO: make sys messages red
     })
 
+
+
     socket.on('displayMsg', d => {
-        chatText.innerHTML += '<div>' + d + '<div>';
+        chatText.innerHTML += '<div class=text>' + d + '<div>';
     })
     chatForm.onsubmit = e => {
         e.preventDefault();
