@@ -3,15 +3,14 @@ var PORT = process.env.PORT || 2000;
 var mongojs = require("mongojs");
 //creates connection to the database
 var db = mongojs('mongodb://shiv:master1@ds263493.mlab.com:63493/tinytanksdb', ['account', 'score']);
-// db.account.insert({ username: "guest", password: "guest" });
+
 
 var express = require('express');
 var app = express();
 var server = require('http').Server(app);
 
-app.get('/', function (req, rep) {
-    rep.sendFile(__dirname + '/index.html');
-});
+//serve ALL the static files in the client directory
+app.use(express.static('client'));
 
 
 //gets all the documents in the account collection
@@ -171,7 +170,7 @@ var Bullets = (parent, angle) => {
                 if (Player.list[p.id].lives === 0) {
                     Player.list[p.id].remove = true;
                     Player.list[self.parent].score++;
-                    db.account.update({ username: Player.list[self.parent].name }, { $set: { score: Player.list[self.parent].score } });
+                    // db.account.update({ username: Player.list[self.parent].name }, { $set: { score: Player.list[self.parent].score } });
                 }
                 // console.log('player: ' + p.id + "has been shot, lives left:" + Player.list[p.id].lives);
                 //  console.log("player: " + self.parent + "points:  " + Player.list[self.parent].score);
@@ -218,8 +217,8 @@ var Player = function (id) {
     self.move_speed = 10;
     self.lives = 5;
     self.score = 0;
-    self.name = "no_name";
-
+    self.name = "underling";
+    self.badgeid = "N/A"
     var su_update = self.move;
     self.move = function () {
         self.moveUnit();
@@ -231,7 +230,7 @@ var Player = function (id) {
 
         }
         for (var i in Player.list) {
-            if (self.lives == 0) {
+            if (self.lives <= 0) {
                 self.remove = true;
                 delete Player.list[self.id];
                 for (var i in SOCKETS) {
@@ -247,13 +246,15 @@ var Player = function (id) {
 
     };
     self.moveUnit = () => {
-        if (self.RIGHT)
+        if (self.RIGHT && (!(self.x >= 830)))
+
             self.x += self.move_speed;
-        if (self.LEFT)
+
+        if (self.LEFT && (!(self.x <= 30)))
             self.x -= self.move_speed;
-        if (self.UP)
+        if (self.UP && (!(self.y <= 19)))
             self.y -= self.move_speed;
-        if (self.DOWN)
+        if (self.DOWN && (!(self.y >= 470)))
             self.y += self.move_speed;
     }
     Player.list[id] = self;
@@ -290,6 +291,7 @@ Player.move = () => {
             number: player.number,
             lives: player.lives,
             score: player.score,
+            name: player.name
         });
     }
     return box;
@@ -337,7 +339,7 @@ io.sockets.on('connection', (socket) => {
     //// sendmsg Event /////
     ////////////////////////
     socket.on('sendMsg', (data) => {
-        var sender = "id:" + (" " + socket.id);
+        var sender = (" " + Player.list[socket.id].name);
         for (var i in SOCKETS) {
             SOCKETS[i].emit('displayMsg', sender + ' - ' + data)
         }
@@ -348,6 +350,43 @@ io.sockets.on('connection', (socket) => {
 
     })
 
+    socket.on('playAsGuest', () => {
+        Player.connect(socket);
+
+    })
+
+
+    socket.on('bb_signin', data => {
+        console.log(data.bb_name + ".." + data.bb_id);
+
+        var fname;
+        try {
+            db.account.find({ bbid: data.bb_id }, function (err, docs) {
+                if (docs.length > 0) {
+                    fname = docs[0].username
+                    console.log(docs[0].username);
+
+                    // Player.list[socket.id].name = data.bb_name;
+                    Player.connect(socket);
+                    Player.list[socket.id].name = fname;
+                    Player.list[socket.id].badgeid = data.bb_id
+                    console.log(Player.list[socket.id].badgeid);
+
+                } else {
+                    db.account.insert({ bbid: data.bb_id, username: data.bb_name, score: 0 })
+                    Player.connect(socket);
+                    Player.list[socket.id].name = data.bb_name;
+                    console.log("adding new player to database, name: " + data.bb_name);
+
+                }
+                for (var i in SOCKETS) {
+                    SOCKETS[i].emit('displayMsg', " " + data.bb_name + " joined");
+                }
+            });
+        } catch (err) {
+            //TODO: handle error
+        }
+    });
     socket.on('namer', data => {
         // socket.emit('clientCom', (eval(data)));
         socket.id = data;   //cahnges the socket id to the entered value
@@ -358,8 +397,18 @@ io.sockets.on('connection', (socket) => {
     // ON DISCONNECT EVENT//
     ////////////////////////
     socket.on('disconnect', () => {
+        if (Player.list[socket.id] === undefined) {
+            console.log("socket undefined")
+        } else {
+            let bid = Player.list[socket.id].badgeid;
+            console.log("badgeid of disconnecter: " + Player.list[socket.id].badgeid);
+            console.log(Player.list[socket.id].score);
+            db.account.update({ bbid: bid }, { $set: { score: Player.list[socket.id].score } });
+        }
+
         delete SOCKETS[socket.id];
         // Player.disconnect(socket); //not needed
+
         delete Player.list[socket.id];
     });
 

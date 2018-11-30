@@ -16,6 +16,10 @@
         <input type="text" id="signin_password">
         <button id="signUp">Sign up!</button>
         <button id="signIn">Sign In!</button>
+        <button id="signinBB">Sign in with BadgeBook</button>
+        <button id="spew">spew</button>
+
+
     </div>
     <div id="gameDiv">
         <canvas id="ctx" width="850" height="500" style="border:1px solid #000000; background-color: rgb(73, 201, 30);"></canvas>
@@ -36,6 +40,7 @@
 
 <!-- socket CDN -->
 <script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
+<script src="./tokenHandler.js"></script>
 <script>
     var socket = io();
 
@@ -45,6 +50,31 @@
     var passwordText = document.getElementById('signin_password');
     var signinBtn = document.getElementById('signIn');
     var signupBtn = document.getElementById('signUp');
+    var signin_BB = document.getElementById('signinBB');
+    var spew = document.getElementById('spew');
+
+    let loggedIn = badgeBookTokenHandler.isBadgeBookUserLoggedIn();
+
+    if (loggedIn) {
+        var bb_pack = {
+            bb_name: badgeBookTokenHandler.getCurrentUserClaims().name,
+            bb_id: badgeBookTokenHandler.getCurrentUserClaims().userId
+        }
+        console.log('====================================');
+        console.log(badgeBookTokenHandler.getCurrentUserClaims());
+        console.log('====================================');
+        socket.emit('bb_signin', bb_pack)
+
+    }
+
+    signin_BB.onclick = () => {
+        badgeBookTokenHandler.loginWithBadgeBook();
+    }
+    //TODO: change spew to play as guest
+    spew.onclick = () => {
+
+        socket.emit('playAsGuest');
+    }
 
     //emit a package called signin that has the value of username and password boxes
     //TODO: change username to un   and change password to pass
@@ -88,9 +118,14 @@
 
         ctx.clearRect(0, 0, 850, 500);
         for (var i = 0; i < data.player.length; i++) {
-            ctx.fillText(data.player[i].lives, data.player[i].x,
+            ctx.fillText(data.player[i].lives, data.player[i].x - 30,
+                data.player[i].y - 8);
+            ctx.font = "13px serif";
+
+            ctx.fillText(data.player[i].name, data.player[i].x - 30,
                 data.player[i].y + 40);
             ctx.fillStyle = "#FF0000";
+
             ctx.fillRect(data.player[i].x - 25, data.player[i].y + 14, 10 + (data.player[i].lives) * 10, 8)
             ctx.fillStyle = "#000";
             var img = new Image();
@@ -106,6 +141,7 @@
             ctx.fillRect(data.bullet[i].x - 5, data.bullet[i].y - 5, 4, 4);
         }
     })
+
 
     document.onmousemove = function (ev) {
         var x = -250 + event.clientX - 8;
