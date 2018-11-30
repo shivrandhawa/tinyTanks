@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>title</title>
+</head>
+
+<body>
+
+    <div id="signDiv">
+        UN:
+        <input type="text" id="signin_username">
+        <br> PASS:
+        <input type="text" id="signin_password">
+        <button id="signUp">Sign up!</button>
+        <button id="signIn">Sign In!</button>
+        <button id="signinBB">Sign in with BadgeBook</button>
+        <button id="spew">spew</button>
+
+
+    </div>
+    <div id="gameDiv">
+        <canvas id="ctx" width="850" height="500" style="border:1px solid #000000; background-color: rgb(73, 201, 30);"></canvas>
+        <div id="chatText" style="width:500px;height:100px;overflow-y:scroll">
+            <!-- <div>type / [name] to change your name -->
+            <!-- <br>type ! to access server commands</br> -->
+            <!-- </div> -->
+        </div>
+
+        <form id="chatForm">
+            <input id="chatInput" type="text" style="width:500px"></input>
+        </form>
+
+        <button value="Refresh Page" onClick="window.location.reload()">re</button>
+
+    </div>
+
+</body>
+
+</html>
+
+<!-- socket CDN -->
+<script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
+<script src="./tokenHandler.js"></script>
+<link rel="stylesheet" href="style.css" type="text/css">
+
+<script>
+    var socket = io();
+
+    var gameDiv = document.getElementById('gameDiv');
+    var signDiv = document.getElementById('signDiv');
+    var usernameText = document.getElementById('signin_username');
+    var passwordText = document.getElementById('signin_password');
+    var signinBtn = document.getElementById('signIn');
+    var signupBtn = document.getElementById('signUp');
+    var signin_BB = document.getElementById('signinBB');
+    var spew = document.getElementById('spew');
+    let loggedIn = badgeBookTokenHandler.isBadgeBookUserLoggedIn();
+
+    if (loggedIn) {
+        var bb_pack = {
+            bb_name: badgeBookTokenHandler.getCurrentUserClaims().name,
+            bb_id: badgeBookTokenHandler.getCurrentUserClaims().userId
+        }
+        console.log('====================================');
+        console.log(badgeBookTokenHandler.getCurrentUserClaims());
+        console.log('====================================');
+        socket.emit('bb_signin', bb_pack)
+        signDiv.style.display = 'none'
+        gameDiv.style.display = 'inline-block';
+    }
+
+    signin_BB.onclick = () => {
+        badgeBookTokenHandler.loginWithBadgeBook();
+
+    }
+    //TODO: change spew to play as guest
+    spew.onclick = () => {
+
+        socket.emit('playAsGuest');
+    }
+
+    //emit a package called signin that has the value of username and password boxes
+    //TODO: change username to un   and change password to pass
+    signinBtn.onclick = () => {
+        socket.emit('signin', { username: usernameText.value, password: passwordText.value })
+    }
+
+    signupBtn.onclick = () => {
+        socket.emit('signup', { username: usernameText.value, password: passwordText.value })
+    }
+
+    socket.on('signin-res', (data) => {
+        if (data.success) {
+            signDiv.style.display = 'none'
+            gameDiv.style.display = 'inline-block';
+        }
+        else
+            alert("sign in failed");
+    });
+
+    //alert  boxes.
+    socket.on('signup-res', (data) => {
+        if (data.success) {
+            alert('signup successful')
+        }
+        else
+            alert('signup unsuccessful')
+    });
+
+    //link canvas dom element
+    var ctx = document.getElementById('ctx').getContext('2d');
+
+
+    var chatText = document.getElementById('chatText');
+    var chatInput = document.getElementById('chatInput');
+    var chatForm = document.getElementById('chatForm');
+    ctx.font = '20px Courier New';
+
+    //initializing connection
+    socket.on('updatePos', data => {
+
+        ctx.clearRect(0, 0, 850, 500);
+        for (var i = 0; i < data.player.length; i++) {
+            ctx.fillText(data.player[i].lives, data.player[i].x - 30,
+                data.player[i].y - 8);
+            ctx.font = "13px serif";
+
+            ctx.fillText(data.player[i].name, data.player[i].x - 30,
+                data.player[i].y + 40);
+            ctx.fillStyle = "#FF0000";
+
+            ctx.fillRect(data.player[i].x - 25, data.player[i].y + 14, 10 + (data.player[i].lives) * 10, 8)
+            ctx.fillStyle = "#000";
+            var img = new Image();
+            img.src = "/client/img/tank.png";
+
+
+            ctx.drawImage(img, data.player[i].x - 33, data.player[i].y - 25, 50, 50);
+
+
+
+        }
+        for (var i = 0; i < data.bullet.length; i++) {
+            ctx.fillRect(data.bullet[i].x - 5, data.bullet[i].y - 5, 4, 4);
+        }
+    })
+
+
+    document.onmousemove = function (ev) {
+        var x = -250 + event.clientX - 8;
+        var y = -250 + event.clientY - 8;
+        var angle = Math.atan2(y, x) / Math.PI * 180;
+        socket.emit('press_key', { inputId: 'mAng', state: angle });
+    }
+    document.onmousedown = function (ev) {
+        socket.emit('press_key', { inputId: 'atk', state: true });
+
+    }
+
+    document.onkeydown = function (event) {
+        if (event.keyCode === 68)    //d
+            socket.emit('press_key', { inputId: 'rights', state: true });
+        else if (event.keyCode === 83)   //s
+            socket.emit('press_key', { inputId: 'downs', state: true });
+        else if (event.keyCode === 65) //a
+            socket.emit('press_key', { inputId: 'lefts', state: true });
+        else if (event.keyCode === 87) // w
+            socket.emit('press_key', { inputId: 'ups', state: true });
+
+    }
+    document.onkeyup = function (event) {
+        if (event.keyCode === 68)    //d
+            socket.emit('press_key', { inputId: 'rights', state: false });
+        else if (event.keyCode === 83)   //s
+            socket.emit('press_key', { inputId: 'downs', state: false });
+        else if (event.keyCode === 65) //a
+            socket.emit('press_key', { inputId: 'lefts', state: false });
+        else if (event.keyCode === 87) // w
+            socket.emit('press_key', { inputId: 'ups', state: false });
+    }
+
+    socket.on('clientCom', d => {
+        chatText.innerHTML += '<div>' + "[sys] " + d + '<div>';
+        //TODO: make sys messages red
+    })
+
+
+
+    socket.on('displayMsg', d => {
+        chatText.innerHTML += '<div class=text>' + d + '<div>';
+    })
+    chatForm.onsubmit = e => {
+        e.preventDefault();
+        if (chatInput.value[0] === '!')
+            socket.emit('command', chatInput.value.slice(1))
+        else if (chatInput.value[0] === '/') {
+            var new_name = chatInput.value.slice(1)
+
+            socket.emit('namer', chatInput.value.slice(1))
+
+            socket.emit('sendMsg', "name changed");
+        }
+        else
+            socket.emit('sendMsg', chatInput.value);
+        chatInput.value = '';
+    }
+
+    document.onmouseup = function (ev) {
+        socket.emit('press_key', { inputId: 'atk', state: false });
+    }
+
+
+
+
+</script>
