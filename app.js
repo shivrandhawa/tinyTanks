@@ -1,18 +1,202 @@
 
+var PORT = process.env.PORT || 2000;
+var mongojs = require("mongojs");
+//creates connection to the database
+var db = mongojs('mongodb://shiv:master1@ds263493.mlab.com:63493/tinytanksdb', ['account', 'score']);
+
+
 var express = require('express');
 var app = express();
 var server = require('http').Server(app);
 
-app.get('/', function (req, rep) {
-    rep.sendFile(__dirname + '/index.html');
+//serve ALL the static files in the client directory
+app.use(express.static('client'));
+
+
+//gets all the documents in the account collection
+app.get('/api/users', function (req, res) {
+    db.account.find(function (err, docs) {
+        //hardcoded apptoken
+        var token = req.headers['apptoken'];
+        var userid = req.headers['userid'];
+
+        /* var newtest = JSON.stringify(docs)
+        var new2 = JSON.parse(newtest) */
+        var output = docs.map(s => Object.values(s)[1]);
+        res.send(output);
+
+        //res.send((token + "::" + userid));         //docs is an array of all documents in the 'account' collection 
+
+    })
 });
+
+//get all document of user with :name param
+// app.get('/api/users/:name', function (req, res) {
+//     //hardcoded apptoken
+//     var token = req.headers['apptoken'];
+//     var userid = req.headers['userid'];
+//     db.account.find({ username: req.params.name }, function (err, docs) {
+//         res.send(docs);
+//         //TODO: handle 404 status errors
+//     })
+// });
+
+
+//get specifc users score - using api headers
+app.post('/api/users/score', function (req, res) {
+    console.log(req.headers, req.body)
+    var ign;
+    //hard coded token 
+    var token = req.headers['authorization'];
+    if (token != "tzznk") {
+        res.status(403);
+        res.send("token error");
+    } else {
+        var userid = req.headers['userid'];
+
+        if (userid == "f3488cc0-a908-4e23-a1d8-3dcbf184f040") {
+            ign = "tom";
+        } else {
+            ign = userid;
+        }
+        try {
+            db.account.find({ username: ign }, function (err, docs) {
+                var jsonObj = {
+                    "request": {
+                        "href": "https://tiny-tanks.herokuapp.com/api/users/landing",
+                        "userid": ign,
+                        "token": "tzznk"
+                    },
+                    "badgeData": [
+                        {
+                            "link": "https://tiny-tanks.herokuapp.com",
+                            "icon-url": "url",
+                            "text": "score: 22"
+
+                        }
+                    ]
+                }
+                console.log('Returning', jsonObj);
+                res.status(200).json(jsonObj);
+            });
+        }
+        catch (err) {
+            var jsonObj = {
+                "request": {
+                    "href": "https://tiny-tanks.herokuapp.com/api/users/landing",
+                    "userid": "defaultUser",
+                    "token": "tzznk"
+                },
+                "badgeData": [
+                    {
+                        "name": "tiny tanks",
+                        "icon-url": "url",
+                        "data": [
+                            "score: 99"
+                        ]
+                    }
+                ]
+            }
+            console.log('Returning', jsonObj);
+            res.send(jsonObj);
+        }
+
+    }
+});
+
+app.post('/api/users/landing', function (req, res) {
+    var ign;
+    var token = req.headers['authorization'];
+    if (token != "tzznk") {
+        res.status(403);
+        res.send("authorization error");
+    } else {
+        var userid = req.headers['userid'];
+        if (userid == "f3488cc0-a908-4e23-a1d8-3dcbf184f040") {
+            ign = "tom";
+        } else {
+            ign = userid;
+        }
+        //ingame name
+        try {
+            db.account.find({ username: ign }, function (err, docs) {
+                var jsonObj = {
+                    "request": {
+                        "href": "https://tiny-tanks.herokuapp.com/api/users/landing",
+                        "userid": ign,
+                        "token": "tzznk"
+                    },
+                    "landingData": [
+                        {
+                            "name": "tiny tanks",
+                            "img-url": "url",
+                            "link": "https://tiny-tanks.herokuapp.com",
+                            "data": [
+                                "score: 22"
+                            ]
+                        }
+                    ]
+                }
+                res.send(jsonObj);
+
+            });
+        }
+        catch (err) {
+            var jsonObj = {
+                "request": {
+                    "href": "https://tiny-tanks.herokuapp.com/api/users/landing",
+                    "userid": "defaultUser",
+                    "token": "tzznk"
+                },
+                "landingData": [
+                    {
+                        "name": "tiny tanks",
+                        "img-url": "url",
+                        "data": [
+                            "score: 99"
+                        ]
+                    }
+                ]
+            }
+            res.send(jsonObj);
+        }
+    }
+});
+
+
 app.use('/client', express.static(__dirname + '/client'));
 console.log("My socket server is running");
 
-server.listen(2000);
+server.listen(PORT);
 
 var SOCKETS = {}; //list of all the sockets connect
 
+
+var isUsernameTaken = (data, cb) => {
+    db.account.find({ username: data.username }, function (err, res) {
+        if (res.length > 0)
+            cb(true);
+        else
+            cb(false);
+    });
+}
+
+var addUser = (data, cb) => {
+    db.account.insert({ username: data.username, password: data.password }, function (err, res) {
+        if (res.length > 0)
+            cb(true);
+        else
+            cb(false);
+    });
+};
+var isValidPass = (data, cb) => {
+    db.account.find({ username: data.username, password: data.password }, function (err, res) {
+        if (res.length > 0)
+            cb(true);
+        else
+            cb(false);
+    });
+}
 //////////////////
 // THING OBJECT //
 //////////////////
@@ -35,8 +219,7 @@ var Thing = function () {
     }
     self.dis = function (k) {
         return Math.sqrt(Math.pow(self.x - k.x, 2) + Math.pow(self.y - k.y, 2));
-    }
-
+    };
     return self;
 };
 //////////////////
@@ -63,14 +246,15 @@ var Bullets = (parent, angle) => {
             if (self.dis(p) < 20 && self.parent !== p.id) {
                 // console.log('====================================');
                 // console.log(p.id + ':' + [self.parent.points]);
-
-
                 Player.list[p.id].lives--;
-                if (Player.list[p.id].lives === 0)
+                if (Player.list[p.id].lives === 0) {
                     Player.list[p.id].remove = true;
+                    Player.list[self.parent].score++;
+                    // db.account.update({ username: Player.list[self.parent].name }, { $set: { score: Player.list[self.parent].score } });
+                }
+                // console.log('player: ' + p.id + "has been shot, lives left:" + Player.list[p.id].lives);
+                //  console.log("player: " + self.parent + "points:  " + Player.list[self.parent].score);
 
-                console.log('player:' + p.id + "has been shot, lives left:" + Player.list[p.id].lives);
-                // console.log('====================================');
                 self.remove = true;
             }
         }
@@ -107,13 +291,14 @@ var Player = function (id) {
     self.ATK = false;
     self.mAng = 0;
     self.RIGHT = false;
-    self.re = false;
+    self.remove = false;
     self.DOWN = false;
     self.UP = false;
     self.move_speed = 10;
     self.lives = 5;
-    self.name = "shiv";
-
+    self.score = 0;
+    self.name = "underling";
+    self.badgeid = "N/A"
     var su_update = self.move;
     self.move = function () {
         self.moveUnit();
@@ -125,11 +310,8 @@ var Player = function (id) {
 
         }
         for (var i in Player.list) {
-            if (self.lives == 0) {
-                console.log('====================================');
-                console.log(self.re);
-                console.log('====================================');
-                self.re = true;
+            if (self.lives <= 0) {
+                self.remove = true;
                 delete Player.list[self.id];
                 for (var i in SOCKETS) {
                     SOCKETS[i].emit('displayMsg', "PLAYER ELIMINATED")
@@ -144,13 +326,15 @@ var Player = function (id) {
 
     };
     self.moveUnit = () => {
-        if (self.RIGHT)
+        if (self.RIGHT && (!(self.x >= 830)))
+
             self.x += self.move_speed;
-        if (self.LEFT)
+
+        if (self.LEFT && (!(self.x <= 30)))
             self.x -= self.move_speed;
-        if (self.UP)
+        if (self.UP && (!(self.y <= 19)))
             self.y -= self.move_speed;
-        if (self.DOWN)
+        if (self.DOWN && (!(self.y >= 470)))
             self.y += self.move_speed;
     }
     Player.list[id] = self;
@@ -159,9 +343,6 @@ var Player = function (id) {
 Player.list = {}; //new method of holding the player list
 Player.connect = (socket) => {
     var player = Player(socket.id);
-    console.log('====================================');
-    console.log(player.id);
-    console.log('====================================');
     socket.on('press_key', data => {
         if (data.inputId === 'ups')
             player.UP = data.state;
@@ -189,14 +370,15 @@ Player.move = () => {
             y: player.y,
             number: player.number,
             lives: player.lives,
+            score: player.score,
+            name: player.name
         });
     }
     return box;
 };
+
 // io object now has all functionalities of socket io library //
 var io = require('socket.io')(server, {});
-
-
 
 //////////////////////////////
 // ON NEW CONNECTION //
@@ -206,13 +388,38 @@ io.sockets.on('connection', (socket) => {
     socket.id = Math.random();//random id for each socket
     socket.SAMPLEVARIABLE = "SAMPLE";
     SOCKETS[socket.id] = socket;
-    Player.connect(socket);
 
+    socket.on('signin', (data) => {
+        isValidPass(data, function (res) {
+            if (res) {
+
+                Player.connect(socket);
+                Player.list[socket.id].name = data.username;
+                socket.emit('signin-res', { success: true });
+
+            } else {
+                socket.emit('signin-res', { success: false });
+
+            }
+        });
+    });
+    socket.on('signup', (data) => {
+        isUsernameTaken(data, function (res) {
+            if (res) {
+                socket.emit('signup-res', { success: false });
+            } else {
+                addUser(data, function () {
+                    socket.emit('signup-res', { success: true });
+
+                })
+            }
+        })
+    });
     ////////////////////////
     //// sendmsg Event /////
     ////////////////////////
     socket.on('sendMsg', (data) => {
-        var sender = "id:" + (" " + socket.id);
+        var sender = (" " + Player.list[socket.id].name);
         for (var i in SOCKETS) {
             SOCKETS[i].emit('displayMsg', sender + ' - ' + data)
         }
@@ -223,22 +430,71 @@ io.sockets.on('connection', (socket) => {
 
     })
 
+    socket.on('playAsGuest', () => {
+        Player.connect(socket);
+
+    })
+
+
+    socket.on('bb_signin', data => {
+        console.log(data.bb_name + ".." + data.bb_id);
+
+        var fname;
+        try {
+            db.account.find({ bbid: data.bb_id }, function (err, docs) {
+                if (docs.length > 0) {
+                    fname = docs[0].username
+                    console.log(docs[0].username);
+
+                    // Player.list[socket.id].name = data.bb_name;
+                    Player.connect(socket);
+                    Player.list[socket.id].name = fname;
+                    Player.list[socket.id].badgeid = data.bb_id
+                    console.log(Player.list[socket.id].badgeid);
+
+                } else {
+                    db.account.insert({ bbid: data.bb_id, username: data.bb_name, score: 0 })
+                    Player.connect(socket);
+                    Player.list[socket.id].name = data.bb_name;
+                    console.log("adding new player to database, name: " + data.bb_name);
+
+                }
+                for (var i in SOCKETS) {
+                    SOCKETS[i].emit('displayMsg', " " + data.bb_name + " joined");
+                    SOCKETS[i].emit("add_player", data.bb_name);
+
+                }
+            });
+        } catch (err) {
+            //TODO: handle error
+        }
+
+    });
     socket.on('namer', data => {
         // socket.emit('clientCom', (eval(data)));
-        console.log('====================================');
         socket.id = data;   //cahnges the socket id to the entered value
         // console.log(self.name = (eval(data)));
-        console.log('====================================');
     });
 
     ////////////////////////
     // ON DISCONNECT EVENT//
     ////////////////////////
     socket.on('disconnect', () => {
+        if (Player.list[socket.id] === undefined) {
+            console.log("socket undefined")
+        } else {
+            let bid = Player.list[socket.id].badgeid;
+            console.log("badgeid of disconnecter: " + Player.list[socket.id].badgeid);
+            console.log(Player.list[socket.id].score);
+            db.account.update({ bbid: bid }, { $set: { score: Player.list[socket.id].score } });
+        }
+
         delete SOCKETS[socket.id];
         // Player.disconnect(socket); //not needed
+
         delete Player.list[socket.id];
     });
+
 
 });
 // Player.disconnect = socket =>{
