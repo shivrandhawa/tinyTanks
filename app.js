@@ -123,6 +123,23 @@ app.post('/api/users/landing', function (req, res) {
                     res.status(200).json(jsonObj);
                 });
             } catch (err) {
+                var jsonObj = {
+                    "request": {
+                        "href": "https://tiny-tanks.herokuapp.com/api/users/score",
+                        "userid": userid,
+                        "token": token
+                    },
+                    "landingData": [
+                        {
+                            "name": "Tiny Tanks",
+                            "img-url": "url",
+                            "link": "https://tiny-tanks.herokuapp.com",
+                            "data": [
+                                2
+                            ]
+                        }
+                    ]
+                };
                 res.status(422).json(jsonObj);
             }
         }
