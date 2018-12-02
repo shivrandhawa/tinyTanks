@@ -94,7 +94,7 @@ app.post('/api/users/score', (req, res) => {
                         "userid": userid,
                         "token": token
                     },
-                    "landingData": [
+                    "badgeData": [
                         {
                             "name": "Tiny Tanks",
                             "img-url": "url",
@@ -140,7 +140,7 @@ app.post('/api/users/landing', function (req, res) {
                             "userid": userid,
                             "token": token
                         },
-                        "badgeData": [
+                        "landingData": [
                             {
                                 "name": "Tiny Tanks",
                                 "img-url": "url",
