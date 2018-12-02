@@ -76,12 +76,10 @@ app.post('/api/users/score', (req, res) => {
                         },
                         "badgeData": [
                             {
-                                "name": "Tiny Tanks",
-                                "img-url": "url",
+                                "text": "Tanks Destroyed: " + score,
                                 "link": "https://tiny-tanks.herokuapp.com",
-                                "data": [
-                                    "Tanks obliterated: " + score
-                                ]
+                                "icon-url": "url",
+
                             }
                         ]
                     };
@@ -96,12 +94,10 @@ app.post('/api/users/score', (req, res) => {
                     },
                     "badgeData": [
                         {
-                            "name": "Tiny Tanks",
-                            "img-url": "url",
+                            "text": "Tanks Destroyed: " + score,
                             "link": "https://tiny-tanks.herokuapp.com",
-                            "data": [
-                                "Tanks obliterated: " + 0
-                            ]
+                            "icon-url": "url",
+
                         }
                     ]
                 };
