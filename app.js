@@ -61,6 +61,13 @@ app.post('/api/users/score', (req, res) => {
         } else {
             try {
                 db.account.find({ bbid: userid }, function (err, docs) {
+                    let temp_doc = docs[0];
+                    if (temp_doc == undefined) {
+                        score = 0;
+
+                    } else {
+                        score = docs[0].score;
+                    }
                     var jsonObj = {
                         "request": {
                             "href": "https://tiny-tanks.herokuapp.com/api/users/score",
@@ -73,7 +80,7 @@ app.post('/api/users/score', (req, res) => {
                                 "img-url": "url",
                                 "link": "https://tiny-tanks.herokuapp.com",
                                 "data": [
-                                    docs[0].score
+                                    "Tanks obliterated: " + score
                                 ]
                             }
                         ]
@@ -93,7 +100,7 @@ app.post('/api/users/score', (req, res) => {
                             "img-url": "url",
                             "link": "https://tiny-tanks.herokuapp.com",
                             "data": [
-                                2
+                                "Tanks obliterated: " + 0
                             ]
                         }
                     ]
@@ -120,19 +127,26 @@ app.post('/api/users/landing', function (req, res) {
         } else {
             try {
                 db.account.find({ bbid: userid }, function (err, docs) {
+                    let temp_doc = docs[0];
+                    if (temp_doc == undefined) {
+                        score = 0;
+
+                    } else {
+                        score = docs[0].score;
+                    }
                     var jsonObj = {
                         "request": {
                             "href": "https://tiny-tanks.herokuapp.com/api/users/score",
                             "userid": userid,
                             "token": token
                         },
-                        "landingData": [
+                        "badgeData": [
                             {
                                 "name": "Tiny Tanks",
                                 "img-url": "url",
                                 "link": "https://tiny-tanks.herokuapp.com",
                                 "data": [
-                                    docs[0].score
+                                    "Tanks obliterated: " + score
                                 ]
                             }
                         ]
@@ -152,7 +166,7 @@ app.post('/api/users/landing', function (req, res) {
                             "img-url": "url",
                             "link": "https://tiny-tanks.herokuapp.com",
                             "data": [
-                                2
+                                "Tanks obliterated: " + 0
                             ]
                         }
                     ]
@@ -162,7 +176,6 @@ app.post('/api/users/landing', function (req, res) {
         }
     }
 });
-
 
 app.use('/client', express.static(__dirname + '/client'));
 console.log("My socket server is running");
@@ -433,7 +446,7 @@ io.sockets.on('connection', (socket) => {
     socket.on('playAsGuest', () => {
         Player.connect(socket);
 
-    })
+    });
 
 
     socket.on('bb_signin', data => {
