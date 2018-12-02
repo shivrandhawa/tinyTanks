@@ -142,7 +142,7 @@ app.post('/api/users/landing', function (req, res) {
                                 "img-url": "url",
                                 "link": "https://tiny-tanks.herokuapp.com",
                                 "data": [
-                                    "Tanks obliterated: " + score
+                                    "Tanks Destroyed: " + score
                                 ]
                             }
                         ]
@@ -162,7 +162,7 @@ app.post('/api/users/landing', function (req, res) {
                             "img-url": "url",
                             "link": "https://tiny-tanks.herokuapp.com",
                             "data": [
-                                "Tanks obliterated: " + 0
+                                "Tanks Destroyed: " + 0
                             ]
                         }
                     ]
