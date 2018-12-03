@@ -78,7 +78,7 @@ app.post('/api/users/score', (req, res) => {
                             {
                                 "text": "Tanks Destroyed: " + score,
                                 "link": "https://tiny-tanks.herokuapp.com",
-                                "icon-url": "https://www.freeiconspng.com/uploads/tank-icon-16.png",
+                                "icon-url": "http://www.premierpits.com/wp-content/uploads/2014/12/pink-tank-icon-300x300.png",
 
                             }
                         ]
@@ -96,7 +96,7 @@ app.post('/api/users/score', (req, res) => {
                         {
                             "text": "Tanks Destroyed: " + score,
                             "link": "https://tiny-tanks.herokuapp.com",
-                            "icon-url": "https://www.freeiconspng.com/uploads/tank-icon-16.png",
+                            "icon-url": "http://www.premierpits.com/wp-content/uploads/2014/12/pink-tank-icon-300x300.png",
 
                         }
                     ]
@@ -139,7 +139,7 @@ app.post('/api/users/landing', function (req, res) {
                         "landingData": [
                             {
                                 "name": "Tiny Tanks",
-                                "img-url": "https://www.freeiconspng.com/uploads/tank-icon-16.png",
+                                "img-url": "http://www.premierpits.com/wp-content/uploads/2014/12/pink-tank-icon-300x300.png",
                                 "link": "https://tiny-tanks.herokuapp.com",
                                 "data": [
                                     "Tanks Destroyed: " + score
@@ -159,7 +159,7 @@ app.post('/api/users/landing', function (req, res) {
                     "landingData": [
                         {
                             "name": "Tiny Tanks",
-                            "img-url": "https://www.freeiconspng.com/uploads/tank-icon-16.png",
+                            "img-url": "http://www.premierpits.com/wp-content/uploads/2014/12/pink-tank-icon-300x300.png",
                             "link": "https://tiny-tanks.herokuapp.com",
                             "data": [
                                 "Tanks Destroyed: " + 0
