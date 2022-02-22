@@ -2,7 +2,7 @@
 
 you can play here: https://tiny-tanks.herokuapp.com/
 
-![screenshot](/screenshots/screenshot.png?raw=true "Gameplay")
+![screenshot](/screenshots/screenshot.png "Gameplay")
 
 
 Online tank webgame written in javascript using MongoDB to verify user accounts and leaderboard.  I made this project to experiment with writing my own API's as well as to refine my javascript and create an interactive game.
